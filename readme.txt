@@ -14,3 +14,4 @@ basic guide:
             + syntax: "scrapy crawl web -o web.json to crawl web" to crawl web
             + cant change the name of function "parse" in quotes_spider.py
             
+
