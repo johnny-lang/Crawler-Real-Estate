@@ -8,6 +8,10 @@ class WebSpider(scrapy.Spider):
     name = "web"
     glob_dic ={}
 
+    custom_settings = {
+        'USER_AGENT':'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.93 Safari/537.36',
+    }
+
     def xpath_element(self):
         self.glob_dic["http://batdongsan.com.vn"] = {"area" : "//*[@id='product-detail']/div[3]/span[2]/span[2]/strong/text()", "price":"//*[@id='product-detail']/div[3]/span[2]/span[1]/strong/text()","title":"//*[@id='product-detail']/div[1]/h1/text()"}
 
