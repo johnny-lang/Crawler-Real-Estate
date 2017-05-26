@@ -6,73 +6,82 @@ import datetime
 from scrapy.selector import Selector 
 class WebSpider(scrapy.Spider):
     name = "web"
-    glob_dic ={}
-
     custom_settings = {
         'USER_AGENT':'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.93 Safari/537.36',
     }
+    
+    with open('/home/vickyzhao/tutorial/tutorial/spiders/web_xpath.json') as json_data:
+        glob_dic = json.load(json_data)
 
-    def xpath_element(self):
-        self.glob_dic["http://batdongsan.com.vn"] = {"area" : "//*[@id='product-detail']/div[3]/span[2]/span[2]/strong/text()", "price":"//*[@id='product-detail']/div[3]/span[2]/span[1]/strong/text()","title":"//*[@id='product-detail']/div[1]/h1/text()"}
-
-    def choose_xpath(self,response):            #chon xpath cho moi web
-        self.xpath_element()
-        for var in self.glob_dic:
-            if var in response.url:
-                return self.glob_dic[var]
-                             
     def get_page(self, url):
         return scrapy.Request(url, self.parse)
 
     def start_requests(self):
-        yield self.get_page('http://batdongsan.com.vn')
+        for var in self.glob_dic:
+            yield self.get_page(var)
+
+    def choose_xpath(self, response):
+        for web in self.glob_dic:
+            if web in response.url:
+                return self.glob_dic[web]  
     
+    def home_page(self, response):
+        for web in self.glob_dic:
+            if web in response.url:
+                return web
+
     def parse(self, response):
-        All_link = Selector(text=response._body).xpath("//*/a/@href").extract() 
-        for var in All_link:
-            if "http://" in var:
+        All_links = Selector(text=response._body).xpath("//*/a/@href").extract()
+        for link in All_links:
+            if "http://" in link:
                 continue
             else:
-                var = "http://batdongsan.com.vn" + var
-                yield scrapy.Request(var, self.parseOtherwebs)
-    
+                link = self.home_page(response) + link
+            yield scrapy.Request(link, self.parseOther)
+
     def check_web(self,response):
-        if "batdongsan.com.vn" not in response.url:
-            return  1
+        flag_check = 0          #check if web had been crawled 
+        for web in self.glob_dic:
+            if web in response.url:
+                flag_check = 1
+        if flag_check == 0:
+            return 1
         for i in range(0, Mongo.db.Coll.count()):
             if response.url == Mongo.db.Coll.find()[i]["link"]:
                 return  1
         for j in range(0, Mongo.db.important.count()):
             if response.url == Mongo.db.important.find()[j]["link"]:
                 return  1
-                     
-    def parseOtherwebs(self, response):
-        flag = 0
-        s_dict = {}
+
+    def parseOther(self, response):
+        flag_info = 0                               #check if web had infomation
         if self.check_web(response):
-            return
-        for var in self.choose_xpath(response):
-            criteria = Selector(text=response._body).xpath(self.choose_xpath(response)[var]).extract()
-            if criteria == []:
+            return 
+        dic_css = self.choose_xpath(response)       #this dictionary save css for this web
+        info_dict = {}
+        for criteria in dic_css:
+            criteria_css = response.css(dic_css[criteria]).extract()
+            if criteria_css == []:
                 continue
-            #store the transient data
-            #store in dict:
             else:
-                flag = 1
-                s_dict[var] = unicodedata.normalize('NFKD', criteria[0]).encode('ascii','ignore') 
-        s_dict["link"] = response.url
-        s_dict["time"] = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())
-        s_dict = json.dumps(s_dict)         #lenh nay de chuyen dict sang json_string
-        data = json.loads(s_dict)           #phai chuyen tu kieu json_string sang json_dict moi insert duoc vao data     
-        if flag == 0:
+                flag_info = 1
+                str1 = ""
+                for sentence in criteria_css:
+                    str1 = str1 + sentence
+                info_dict[criteria] = unicodedata.normalize('NFKD', str1).encode('ascii','ignore')
+        info_dict["link"] = response.url
+        info_dict["time"] = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())
+        info_dict= json.dumps(info_dict)         #convert dictionary to json_string
+        data = json.loads(info_dict)           #must convert json_string to json_dictionary to insert into database
+        if flag_info == 0:
             Mongo.unnecessary_info(data)
         else:
             Mongo.necessary_info(data)
-        Another_link =  Selector(text=response._body).xpath('//*/a/@href').extract()
-        #query tat ca cac link trong cac trang ben trong
-        for var in Another_link:
-            if "http://" in var:
-                continue
+        Another_links =  Selector(text=response._body).xpath('//*/a/@href').extract()
+        #query all links in this web
+        for link in Another_links:
+            if "http://" in link:
+                pass
             else:
-                var = "http://batdongsan.com.vn" + var
-                yield scrapy.Request(var, self.parseOtherwebs) 
+                link = self.home_page(response) + link 
+            yield scrapy.Request(link, self.parseOther)
