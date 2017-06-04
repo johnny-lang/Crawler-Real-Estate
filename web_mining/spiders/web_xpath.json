@@ -1,0 +1,16 @@
+{
+    "http://nhadat24h.net":
+        {
+            "title": "body h1 a#txtcontenttieudetin::text",
+            "price": "label#ContentPlaceHolder2_lbGiaTien ::text",
+            "area": "label#ContentPlaceHolder2_lbDienTich ::text",
+            "description": "div#ContentPlaceHolder2_divContent ::text"
+        },
+    "http://www.muabannhadat.vn":
+        {   
+            "title": "h3.navi-title ::text",
+            "price": "span#MainContent_ctlDetailBox_lblPrice.price ::text",
+            "area": "span#MainContent_ctlDetailBox_lblSurface ::text", 
+            "description":"div#Description.box-description ::text"
+        }
+}

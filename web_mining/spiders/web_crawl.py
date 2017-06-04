@@ -1,5 +1,6 @@
 import json
 import Mongo
+from Mongo import *
 import scrapy
 import unicodedata
 import datetime
@@ -9,10 +10,10 @@ class WebSpider(scrapy.Spider):
     custom_settings = {
         'USER_AGENT':'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.93 Safari/537.36',
     }
-    
-    with open('/home/vickyzhao/tutorial/tutorial/spiders/web_xpath.json') as json_data:
-        glob_dic = json.load(json_data)
 
+    with open('/home/vickyzhao/webmining/web_mining/spiders/web_xpath.json') as json_data:
+        glob_dic = json.load(json_data)
+    
     def get_page(self, url):
         return scrapy.Request(url, self.parse)
 
@@ -25,6 +26,7 @@ class WebSpider(scrapy.Spider):
             if web in response.url:
                 return self.glob_dic[web]  
     
+# de lay ten dung cho cac trang web de crawl
     def home_page(self, response):
         for web in self.glob_dic:
             if web in response.url:
@@ -40,18 +42,18 @@ class WebSpider(scrapy.Spider):
             yield scrapy.Request(link, self.parseOther)
 
     def check_web(self,response):
-        flag_check = 0          #check if web had been crawled 
+        flag_check = 0          #check if web need crawling 
         for web in self.glob_dic:
             if web in response.url:
                 flag_check = 1
         if flag_check == 0:
             return 1
-        for i in range(0, Mongo.db.Coll.count()):
-            if response.url == Mongo.db.Coll.find()[i]["link"]:
-                return  1
-        for j in range(0, Mongo.db.important.count()):
-            if response.url == Mongo.db.important.find()[j]["link"]:
-                return  1
+        # check if link in web have exist
+        if Mongo.db.linking_page.find_one({"link":response.url}) != None or Mongo.db.info_page.find_one({"link": response.url}) != None:
+            return 1
+        #check if this web had been crawl
+        #
+         #   return 1
 
     def parseOther(self, response):
         flag_info = 0                               #check if web had infomation
