@@ -26,7 +26,7 @@ class WebSpider(scrapy.Spider):
             if web in response.url:
                 return self.glob_dic[web]  
     
-# de lay ten dung cho cac trang web de crawl
+# get true name for the inside web
     def home_page(self, response):
         for web in self.glob_dic:
             if web in response.url:
@@ -51,9 +51,6 @@ class WebSpider(scrapy.Spider):
         # check if link in web have exist
         if Mongo.db.linking_page.find_one({"link":response.url}) != None or Mongo.db.info_page.find_one({"link": response.url}) != None:
             return 1
-        #check if this web had been crawl
-        #
-         #   return 1
 
     def parseOther(self, response):
         flag_info = 0                               #check if web had infomation
